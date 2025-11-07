@@ -122,28 +122,59 @@ backend/
 
 ## 🌐 Git Workflow
 
-### Setup GitHub Repository
-1. Create new repository on GitHub
-2. Add remote: `git remote add origin <your-repo-url>`
-3. Push code: `git push -u origin main`
+### Repository Setup ✅ COMPLETED
+- **GitHub Repository:** https://github.com/bhupender-afk/ai-report-backend
+- **Local Repository:** Connected and synchronized
+- **Server Repository:** Connected and synchronized
+
+### Deployment Configuration
+1. Copy `.env.deploy.example` to `.env.deploy`
+2. Fill in your actual GitHub token and server details
+3. Use `./deploy.sh` for automated deployments
 
 ### Bidirectional Workflow
+#### Method 1: Using Deployment Script (Recommended)
+```bash
+# From local machine
+./deploy.sh
+
+# Choose option 1 for Git sync
+# This will:
+# 1. Push local changes to GitHub
+# 2. Pull changes on server
+# 3. Restart application
+```
+
+#### Method 2: Manual Git Operations
 ```bash
 # Local to GitHub to Server
 git add . && git commit -m "Your changes"
 git push origin main
 
-# On server, pull changes
-git pull origin main
-./deploy.sh
+# On server (using maintenance script)
+./server-maintenance.sh
+# Choose option 4: Pull latest changes from GitHub
 
 # Server to GitHub to Local
-# (Work directly on server when needed)
-git add . && git commit -m "Server changes"
-git push origin main
+# On server (using maintenance script)
+./server-maintenance.sh
+# Choose option 5: Push changes to GitHub (requires token setup)
 
 # On local machine
 git pull origin main
+```
+
+#### Method 3: Direct Commands
+```bash
+# Local to GitHub
+git add . && git commit -m "Your changes"
+git push origin main
+
+# Server pull from GitHub
+ssh root@31.97.235.250
+cd /var/www/zuvomo_launchpad/ai-report-backend
+git pull origin main
+pm2 restart ai-report-backend
 ```
 
 ## 📊 Monitoring

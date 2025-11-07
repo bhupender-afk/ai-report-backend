@@ -21,11 +21,13 @@ show_menu() {
     echo "2. View live logs"
     echo "3. Restart application"
     echo "4. Pull latest changes from GitHub"
-    echo "5. Update dependencies"
-    echo "6. View system resource usage"
-    echo "7. Backup database"
-    echo "8. Check disk space"
-    echo "9. Exit"
+    echo "5. Push changes to GitHub"
+    echo "6. Show Git status"
+    echo "7. Update dependencies"
+    echo "8. View system resource usage"
+    echo "9. Backup database"
+    echo "10. Check disk space"
+    echo "11. Exit"
     echo ""
 }
 
@@ -57,14 +59,61 @@ restart_app() {
 pull_updates() {
     echo "🔄 Pulling latest changes from GitHub..."
     if [ -d ".git" ]; then
-        git pull origin main
-        echo "📦 Updating dependencies..."
-        npm install --production
-        echo "🔄 Restarting application..."
-        pm2 restart $PM2_APP_NAME
-        echo "✅ Updates applied successfully"
+        git fetch origin main
+        echo "📊 Checking for updates..."
+        LOCAL=$(git rev-parse HEAD)
+        REMOTE=$(git rev-parse origin/main)
+
+        if [ $LOCAL = $REMOTE ]; then
+            echo "✅ Already up to date"
+        else
+            echo "📥 Pulling new changes..."
+            git pull origin main
+            echo "📦 Updating dependencies..."
+            npm install --production
+            echo "🔄 Restarting application..."
+            pm2 restart $PM2_APP_NAME
+            echo "✅ Updates applied successfully"
+        fi
     else
         echo "❌ Not a Git repository. Please initialize Git first."
+    fi
+}
+
+# Function to push changes to GitHub
+push_updates() {
+    echo "🚀 Pushing local changes to GitHub..."
+    if [ -d ".git" ]; then
+        echo "📊 Checking for uncommitted changes..."
+        if [ -n "$(git status --porcelain)" ]; then
+            echo "📝 Adding and committing changes..."
+            git add .
+            read -p "Enter commit message: " commit_msg
+            git commit -m "${commit_msg:-Server updates $(date '+%Y-%m-%d %H:%M:%S')}"
+        fi
+
+        echo "📤 Note: Push requires GitHub token configuration"
+        echo "✅ Changes prepared for push (manual setup required)"
+    else
+        echo "❌ Not a Git repository. Please initialize Git first."
+    fi
+}
+
+# Function to show Git status
+git_status() {
+    echo "📊 Git Repository Status:"
+    echo "------------------------"
+    if [ -d ".git" ]; then
+        echo "Branch: $(git branch --show-current)"
+        echo "Last commit: $(git log -1 --format='%h - %s (%cr)')"
+        echo ""
+        echo "Status:"
+        git status --short
+        echo ""
+        echo "Recent commits:"
+        git log --oneline -5
+    else
+        echo "❌ Not a Git repository"
     fi
 }
 
@@ -108,7 +157,7 @@ check_disk() {
 # Main menu loop
 while true; do
     show_menu
-    read -p "Enter your choice (1-9): " choice
+    read -p "Enter your choice (1-11): " choice
 
     case $choice in
         1)
@@ -124,18 +173,24 @@ while true; do
             pull_updates
             ;;
         5)
-            update_deps
+            push_updates
             ;;
         6)
-            resource_usage
+            git_status
             ;;
         7)
-            backup_db
+            update_deps
             ;;
         8)
-            check_disk
+            resource_usage
             ;;
         9)
+            backup_db
+            ;;
+        10)
+            check_disk
+            ;;
+        11)
             echo "👋 Goodbye!"
             exit 0
             ;;
