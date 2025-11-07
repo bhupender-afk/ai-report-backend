@@ -59,28 +59,55 @@ curl http://31.97.235.250:8080/api/health
 4. Start development server: `npm run dev`
 
 ### Environment Variables
-```env
-MONGODB_URI=your_mongodb_connection_string
-PORT=5000
-NODE_ENV=development
-JWT_SECRET=your_jwt_secret
-RAZORPAY_KEY_ID=your_razorpay_key
-RAZORPAY_KEY_SECRET=your_razorpay_secret
-# ... other variables
-```
+⚠️ **SECURITY IMPORTANT**: Never commit actual `.env` files to Git!
+
+#### For Development:
+1. Copy `.env.example` to `.env`
+2. Fill in your development values
+
+#### For Production:
+1. Copy `.env.production.example` to `.env.production`
+2. Fill in your production values (strong passwords, production database, etc.)
+3. Ensure `.env.production` is in `.gitignore`
+
+#### Required Variables:
+- `MONGODB_URI` - MongoDB connection string
+- `JWT_SECRET` - Strong secret for JWT tokens
+- `SMTP_*` - Email service credentials
+- `RAZORPAY_*` - Payment gateway credentials
+- Other configuration variables as documented
 
 ## 🚀 Deployment
 
-### Quick Deploy
+### 🔒 Security First Deployment
+
+#### Quick Deploy
 ```bash
+# Copy deployment template and configure
+cp .env.deploy.example .env.deploy
+# Edit .env.deploy with your actual credentials
 ./deploy.sh
 ```
 
-### Manual Deployment
+#### Manual Deployment
 1. Copy files to server: `/var/www/zuvomo_launchpad/ai-report-backend/`
 2. Install dependencies: `npm install --production`
-3. Set up environment: `cp .env.production .env`
+3. **Secure environment setup:**
+   ```bash
+   # Copy production template
+   cp .env.production.example .env.production
+   # Edit with actual production credentials
+   nano .env.production
+   ```
 4. Start with PM2: `PORT=8080 pm2 start server-enhanced.js --name ai-report-backend`
+
+#### 🚨 Security Checklist
+- [ ] `.env.production` contains actual production credentials
+- [ ] `.env.production` is NOT committed to Git
+- [ ] MongoDB URI uses strong authentication
+- [ ] JWT secret is cryptographically strong
+- [ ] SMTP credentials are valid and secure
+- [ ] All default passwords changed
 
 ### PM2 Management
 ```bash
