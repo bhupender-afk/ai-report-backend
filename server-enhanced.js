@@ -67,6 +67,7 @@ app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:3000',
     'http://localhost:3002',
+    'http://localhost:3003',
     'https://zuvomo.com',
     'https://www.zuvomo.com',
     'http://zuvomo.com',

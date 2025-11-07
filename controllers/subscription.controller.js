@@ -96,24 +96,49 @@ class SubscriptionController {
       const {
         razorpay_order_id,
         razorpay_payment_id,
-        razorpay_signature
+        razorpay_signature,
+        test_mode
       } = req.body;
 
       const userId = req.user._id;
 
-      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      console.log(`🔍 Verifying payment for user ${userId}:`, {
+        orderId: razorpay_order_id,
+        paymentId: razorpay_payment_id,
+        hasSignature: !!razorpay_signature,
+        testMode: test_mode
+      });
+
+      // Validate required fields
+      if (!razorpay_order_id || !razorpay_payment_id) {
+        console.log('❌ Missing payment verification details');
         return res.status(400).json({
           error: 'Missing payment verification details'
         });
       }
 
-      const isValid = razorpayService.verifyPaymentSignature(
-        razorpay_order_id,
-        razorpay_payment_id,
-        razorpay_signature
-      );
+      // Handle signature verification based on mode
+      let isValid = true;
+      if (test_mode) {
+        console.log('🧪 Test mode detected - skipping signature verification');
+        // In test mode, we skip signature verification
+        isValid = true;
+      } else if (!razorpay_signature) {
+        console.log('❌ Production mode requires signature');
+        return res.status(400).json({
+          error: 'Missing payment signature for production mode'
+        });
+      } else {
+        console.log('🔐 Production mode - verifying signature');
+        isValid = razorpayService.verifyPaymentSignature(
+          razorpay_order_id,
+          razorpay_payment_id,
+          razorpay_signature
+        );
+      }
 
       if (!isValid) {
+        console.log('❌ Payment signature verification failed');
         return res.status(400).json({
           error: 'Invalid payment signature'
         });
@@ -136,8 +161,9 @@ class SubscriptionController {
       }
 
       transaction.razorpayPaymentId = razorpay_payment_id;
-      transaction.razorpaySignature = razorpay_signature;
+      transaction.razorpaySignature = razorpay_signature || ''; // Empty for test mode
       transaction.status = 'success';
+      transaction.testMode = test_mode; // Track if this was a test mode payment
       await transaction.save();
 
       const plan = transaction.planId;
@@ -165,7 +191,15 @@ class SubscriptionController {
       user.planHistory.push(userPlan._id);
       await user.save();
 
-      await emailService.sendPurchaseConfirmation(user.email, plan, transaction);
+      // Send confirmation email (skip in test mode if desired)
+      try {
+        await emailService.sendPurchaseConfirmation(user.email, plan, transaction);
+      } catch (emailError) {
+        console.warn('⚠️ Failed to send confirmation email:', emailError.message);
+        // Don't fail the payment verification due to email issues
+      }
+
+      console.log(`✅ Payment verified successfully for user ${userId}, plan: ${plan.name}, test_mode: ${test_mode}`);
 
       res.status(200).json({
         success: true,
@@ -174,7 +208,8 @@ class SubscriptionController {
         plan: {
           name: plan.displayName,
           credits: plan.credits
-        }
+        },
+        testMode: test_mode
       });
     } catch (error) {
       console.error('Verify Payment Error:', error);
